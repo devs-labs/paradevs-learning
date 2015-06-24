@@ -1,0 +1,32 @@
+Paradevs : DEVS multimodeling and simulation framework
+======================================================
+
+See AUTHORS and COPYRIGHT for the list of contributors.
+
+PARADEVS is a framework for multimodeling and simulation of complex dynamical
+systems. It addresses the reliability issue by using recent
+developments in the theory of modeling and simulation proposed by B. Zeigler
+with the Discrete Event System Specification formalism (DEVS).
+
+
+Requirements
+------------
+
+For the simulator and API only:
+    boost	1.34  http://www.boost.org
+
+To build VLE you need:
+    cmake	2.6.0 http://www.cmake.org
+    make	1.8
+    gcc, g++	4.6 minimum
+
+
+Getting the code
+----------------
+
+The source tree is currently hosted on GitHub. To view the repository
+online :
+    https://github.com//vle-labs/paradevs
+
+The URL to clone it:
+    git@github.com:vle-labs/paradevs.git

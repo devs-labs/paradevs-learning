@@ -1,0 +1,12 @@
+prefix=@PARADEVS_LEARNING_PKGCONFIG_PREFIXPATH@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/@PARADEVS_LEARNING_PKGCONFIG_LIBDIR@
+includedir=${prefix}/include
+
+Name: Paradevs Learning
+Description: PARADEVS LEARNING A part of multimodelling and simulation tools
+Requires: libxml-2.0 glibmm-2.4
+Version: @PARADEVS_LEARNING_VERSION@
+Libs:	-L${libdir} \
+    -lpdevs-@PARADEVS_LEARNING_VERSION_SHORT@
+Cflags: -I${includedir}/paradevs-@PARADEVS_LEARNING_VERSION_SHORT@ -I@PARADEVS_LEARNING_PKGCONFIG_BOOSTINCLUDE_DIRS@
