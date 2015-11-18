@@ -65,25 +65,50 @@ public:
                           const paradevs::common::NoParameters& parameters) :
         paradevs::pdevs::GraphManager < common::DoubleTime >(coordinator,
                                                              parameters),
-        a("a", common::NoParameters()), b("b", common::NoParameters()),
-        c("c", common::NoParameters()), d("d", common::NoParameters())
+        a("a", common::NoParameters())
+        // ,
+        // b("b", common::NoParameters()),
+        // c("c", common::NoParameters()),
+        // d("d", common::NoParameters()),
+        // e("e", common::NoParameters()),
+        // f("f", common::NoParameters()),
+        // g("g", common::NoParameters()),
+        // h("h", common::NoParameters())
     {
         add_child(&a);
-        add_child(&b);
-        add_child(&c);
-        add_child(&d);
+        // add_child(&b);
+        // add_child(&c);
+        // add_child(&d);
+        // add_child(&e);
+        // add_child(&f);
+        // add_child(&g);
+        // add_child(&h);
 
-        a.add_out_port("out");
-        b.add_in_port("in");
-        b.add_out_port("out");
-        c.add_in_port("in");
-        c.add_out_port("out");
-        d.add_in_port("in");
-        d.add_out_port("out");
+        // a.add_out_port("out");
+        // b.add_in_port("in");
+        // b.add_out_port("out");
+        // c.add_in_port("in");
+        // c.add_out_port("out");
+        // d.add_in_port("in");
+        // d.add_out_port("out");
+        // e.add_in_port("in");
+        // e.add_out_port("out");
+        // f.add_in_port("in");
+        // f.add_out_port("out");
+        // g.add_in_port("in");
+        // g.add_out_port("out");
+        // h.add_in_port("in");
+        // h.add_out_port("out");
 
-        add_link(&a, "out", &b, "in");
-        add_link(&b, "out", &c, "in");
-        add_link(&c, "out", &d, "in");
+        // add_link(&a, "out", &d, "in");
+        // add_link(&b, "out", &d, "in");
+        // add_link(&b, "out", &e, "in");
+        // add_link(&c, "out", &e, "in");
+        // add_link(&d, "out", &f, "in");
+        // add_link(&e, "out", &f, "in");
+        // add_link(&e, "out", &g, "in");
+        // add_link(&f, "out", &h, "in");
+        // add_link(&g, "out", &h, "in");
     }
 
     virtual ~TwoModelsGraphManager()
@@ -91,9 +116,13 @@ public:
 
 private:
     paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > a;
-    paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > b;
-    paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > c;
-    paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > d;
+    // paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > b;
+    // paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > c;
+    // paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > d;
+    // paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > e;
+    // paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > f;
+    // paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > g;
+    // paradevs::pdevs::Simulator < common::DoubleTime, ThreeStateModel > h;
 };
 
 class GeneratorGraphManager :

@@ -193,7 +193,7 @@ public:
             ++n;
         }
 
-        std::cout << get_name() << "|I|" << (t - _last_time) << " ";
+        // std::cout << get_name() << "|I|" << (t - _last_time) << " ";
 
         if (sigma == 1) {
             if (n > 3) {

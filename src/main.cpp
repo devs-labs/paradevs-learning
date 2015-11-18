@@ -319,40 +319,41 @@ Dates generate_dates(double max, const Dates& events, Hmm& hmm)
                         } else {
                             dates.push_back(dates.back() + value);
                         }
-                    } else {
-                        double duration = *ite - dates.back();
-                        std::string key =
-                            (boost::format("%1%|0") % duration).str();
-
-                        // std::cout << "INF => " << duration << std::endl;
-                        // std::cout << "    => "
-                        //           << key << " "
-                        //           << hmm.getId(key) << " "
-                        //           << std::endl;
-
-                        OneDTable::const_iterator it =
-                            hmm._transition[state]->begin();
-                        double max = 0;
-                        unsigned long new_state;
-
-                        while (it != hmm._transition[state]->end()) {
-                            OneDTable::const_iterator it2 =
-                                hmm._emission[it->first]->find(hmm.getId(key));
-                            double p = std::exp(it2->second) *
-                                std::exp(it->second);
-
-                            if (max < p) {
-                                max = p;
-                                new_state = it->first;
-                            }
-                            ++it;
+                        t = dates.back();
+                        while (ite != events.end() and t >= *ite) {
+                            ++ite;
                         }
+                    } else {
+                        // double duration = *ite - dates.back();
+                        // std::string key =
+                        //     (boost::format("%1%|0") % duration).str();
+
+                        // // std::cout << "INF => " << duration << std::endl;
+                        // // std::cout << "    => "
+                        // //           << key << " "
+                        // //           << hmm.getId(key) << " "
+                        // //           << std::endl;
+
+                        // OneDTable::const_iterator it =
+                        //     hmm._transition[state]->begin();
+                        // double max = 0;
+                        // unsigned long new_state;
+
+                        // while (it != hmm._transition[state]->end()) {
+                        //     OneDTable::const_iterator it2 =
+                        //         hmm._emission[it->first]->find(hmm.getId(key));
+                        //     double p = std::exp(it2->second) *
+                        //         std::exp(it->second);
+
+                        //     if (max < p) {
+                        //         max = p;
+                        //         new_state = it->first;
+                        //     }
+                        //     ++it;
+                        // }
                         // state = new_state;
-                        dates.push_back(*ite);
-                        ++ite;
-                    }
-                    t = dates.back();
-                    while (ite != events.end() and t >= *ite) {
+                        // dates.push_back(*ite);
+                        t = *ite;
                         ++ite;
                     }
                 } else {
@@ -380,6 +381,27 @@ Durations compute_durations(const Dates& dates)
     return durations;
 }
 
+// merge date lists
+Dates union_dates(const std::vector < Dates >& D)
+{
+    Dates U;
+    std::vector < Dates >::const_iterator it = D.begin();
+
+    while (it != D.end()) {
+        Dates::const_iterator it2 = it->begin();
+
+        while (it2 != it->end()) {
+            if (std::find(U.begin(), U.end(), *it2) == U.end()) {
+                U.push_back(*it2);
+            }
+            ++it2;
+        }
+        ++it;
+    }
+    std::sort(U.begin(), U.end());
+    return U;
+}
+
 void generate_hmm(double max, const std::vector < std::string >& names)
 {
     std::map < std::string, Hmm > hmms;
@@ -392,24 +414,50 @@ void generate_hmm(double max, const std::vector < std::string >& names)
         ++it;
     }
 
-    Dates A_dates, B_dates, C_dates, D_dates;
-    Durations A_durations, B_durations, C_durations, D_durations;
+    Dates A_dates, B_dates, C_dates, D_dates, E_dates, F_dates, G_dates,
+        H_dates;
+    Durations A_durations, B_durations, C_durations, D_durations, E_durations,
+        F_durations, G_durations, H_durations;
 
     A_dates = generate_dates(max, {}, hmms["a"]);
     A_durations = compute_durations(A_dates);
     compute_stats(A_durations);
 
-    B_dates = generate_dates(max, A_dates, hmms["b"]);
+    B_dates = generate_dates(max, {}, hmms["b"]);
     B_durations = compute_durations(B_dates);
     compute_stats(B_durations);
 
-    C_dates = generate_dates(max, B_dates, hmms["c"]);
+    C_dates = generate_dates(max, {}, hmms["c"]);
     C_durations = compute_durations(C_dates);
     compute_stats(C_durations);
 
-    D_dates = generate_dates(max, C_dates, hmms["d"]);
+    Dates AB_dates = union_dates({A_dates, B_dates});
+
+    D_dates = generate_dates(max, AB_dates, hmms["d"]);
     D_durations = compute_durations(D_dates);
     compute_stats(D_durations);
+
+    Dates BC_dates = union_dates({B_dates, C_dates});
+
+    E_dates = generate_dates(max, BC_dates, hmms["e"]);
+    E_durations = compute_durations(E_dates);
+    compute_stats(E_durations);
+
+    Dates DE_dates = union_dates({D_dates, E_dates});
+
+    F_dates = generate_dates(max, DE_dates, hmms["f"]);
+    F_durations = compute_durations(F_dates);
+    compute_stats(F_durations);
+
+    G_dates = generate_dates(max, E_dates, hmms["g"]);
+    G_durations = compute_durations(G_dates);
+    compute_stats(G_durations);
+
+    Dates FG_dates = union_dates({F_dates, G_dates});
+
+    H_dates = generate_dates(max, FG_dates, hmms["h"]);
+    H_durations = compute_durations(H_dates);
+    compute_stats(H_durations);
 }
 
 int main(int argc, char** argv)
