@@ -36,6 +36,8 @@ typedef std::map < Observation, unsigned int > Table;
 typedef std::map < double, unsigned int > DoubleTable;
 typedef std::vector < double > Doubles;
 
+// construit une table avec les différentes valeurs d'une séquence et
+// compte le nombre d'itérations
 Table get_unique(const Sequence& sequence)
 {
     Table unique;
@@ -52,6 +54,8 @@ Table get_unique(const Sequence& sequence)
     return unique;
 }
 
+// construit une table avec les différentes valeurs d'une liste de
+// valeurs réelles et compte le nombre d'itérations
 DoubleTable get_unique(const Doubles& sequence)
 {
     DoubleTable unique;
@@ -68,6 +72,14 @@ DoubleTable get_unique(const Doubles& sequence)
     return unique;
 }
 
+// relecture du fichier de séquence initiale (seq)
+// chaque élément de la séquence est séparé par un espace
+// chaque élément est de la forme x|y|z où x est le nom du modèle, y
+// est le type d'observation (O ou I) et z la durée depuis le dernier
+// événement (ou INF si la durée est l'état est infinie)
+// un objet Sequence est retourné avec la liste des observations
+// si le paramètre ignore est true, les INF sont ignorés ; par défaut,
+// ce n'est pas le cas
 Sequence read_initial_sequence(const std::string& name, bool ignore = false)
 {
     Sequence sequence;
@@ -116,9 +128,13 @@ Sequence read_initial_sequence(const std::string& name, bool ignore = false)
     return sequence;
 }
 
+// la séquence initiale est lue et découpée en sous-séquences de
+// longueur 20 ;
+// chaque sous-séquence est terminée par une observation END pour que
+// le HMM généré possède un état terminal
 Sequences build_initial_sequences(const std::string& name)
 {
-    Sequence sequence = read_initial_sequence(name);
+    Sequence sequence = read_initial_sequence(name, false);
     Sequences sequences;
     unsigned int length = sequence.size() / 20;
     Sequence::const_iterator it = sequence.begin();
@@ -143,6 +159,8 @@ Sequences build_initial_sequences(const std::string& name)
     return sequences;
 }
 
+// fonction de sauvegarde de la liste des sous-séquences dans les
+// fichiers .input
 void save_sequences(const std::string& name, const Sequences& sequences)
 {
     std::ofstream f((boost::format("seq-%1%.input") %
@@ -159,6 +177,7 @@ void save_sequences(const std::string& name, const Sequences& sequences)
     f.close();
 }
 
+// construction un vecteur d'une taille donnée avec des probabilités aléatoires
 Doubles build_probs(unsigned int size)
 {
     Doubles sequence;
@@ -176,6 +195,9 @@ Doubles build_probs(unsigned int size)
     return sequence;
 }
 
+// construction des matrices initiales emit et trans avec les
+// probabilités aléatoires et en fonction du nombre d'états cachés
+// les matrices sont aussi en fonction des symboles des séquences
 void build_init(const std::string& name, unsigned int state_number)
 {
     Sequence sequence = read_initial_sequence(name);
@@ -221,6 +243,7 @@ void build_init(const std::string& name, unsigned int state_number)
     save_sequences(name, build_initial_sequences(name));
 }
 
+// construit les matrices emit et trans à l'aide de l'algorithme Baum-Welch
 void learn(const std::string& name, unsigned int maxIterations)
 {
     Hmm hmm;
@@ -235,6 +258,9 @@ void learn(const std::string& name, unsigned int maxIterations)
     hmm.saveProbs(output.c_str());
 }
 
+// calcule une moyenne à partir d'une liste de réels
+// la liste est parcourue pour identifier les différentes valeurs réelles
+// puis calcul de la moyenne pondérée
 void compute_stats(const Doubles& sequence)
 {
     unsigned int n = sequence.size();
@@ -244,16 +270,15 @@ void compute_stats(const Doubles& sequence)
 
     while (it != D.end()) {
         m += it->first * (it->second / (double)(n));
-
-        // std::cout << it->first << "\t"
-        //           << (it->second / (double)(n))
-        //           << std::endl;
         ++it;
     }
 
-    std::cout << "average = " << m << std::endl;
+    std::cout << m << std::endl;
 }
 
+// calcule une moyenne à partir d'une séquence
+// la séquence est parcourue pour identifier les différentes durées
+// puis calcul de la moyenne pondérée
 void compute_stats(const Sequence& sequence)
 {
     unsigned int n = sequence.size();
@@ -263,17 +288,16 @@ void compute_stats(const Sequence& sequence)
 
     while (it != D.end()) {
         m += it->first.first * (it->second / (double)(n));
-
-        // std::cout << it->first.first << "\t"
-        //           << (it->second / (double)(n))
-        //           << std::endl;
         ++it;
     }
 
     std::cout << "average = " << m << std::endl;
 }
 
-Sequence generate_devs()
+// simule le graphe de modèles
+// ATTENTION !!! TOTALEMENT SPECIFIQUE AU GRAPHE DE MODELES DE
+// L'EXEMPLE !!!
+Sequence generate_devs(double max)
 {
     Sequence sequence;
 
@@ -281,8 +305,8 @@ Sequence generate_devs()
         DoubleTime, paradevs::pdevs::Coordinator <
             DoubleTime,
                         // GeneratorGraphManager >
-        TwoModelsGraphManager >
-        > rc(0, 10000, "root", paradevs::common::NoParameters(),
+                        TwoModelsGraphManager >
+        > rc(0, max, "root", paradevs::common::NoParameters(),
              paradevs::common::NoParameters());
 
     rc.run();
@@ -292,6 +316,9 @@ Sequence generate_devs()
 typedef std::vector < double > Dates;
 typedef std::vector < double > Durations;
 
+// génére les dates des événements de sortie en fonction du HMM sur
+// une période [0, max]
+// le paramètre events est la liste des dates d'arrivée des événements d'entrée
 Dates generate_dates(double max, const Dates& events, Hmm& hmm)
 {
     Dates dates;
@@ -311,6 +338,7 @@ Dates generate_dates(double max, const Dates& events, Hmm& hmm)
             type = atoi(obsV[1].c_str());
             if (type != IN) {
                 if (type != END) {
+                    // ce n'est pas un état infini
                     if (type != INF) {
                         double value = atof(obsV[0].c_str());
 
@@ -320,41 +348,17 @@ Dates generate_dates(double max, const Dates& events, Hmm& hmm)
                             dates.push_back(dates.back() + value);
                         }
                         t = dates.back();
+                        // détermine la prochaine date d'arrivée d'un
+                        // événement d'entrée
                         while (ite != events.end() and t >= *ite) {
                             ++ite;
                         }
                     } else {
-                        // double duration = *ite - dates.back();
-                        // std::string key =
-                        //     (boost::format("%1%|0") % duration).str();
-
-                        // // std::cout << "INF => " << duration << std::endl;
-                        // // std::cout << "    => "
-                        // //           << key << " "
-                        // //           << hmm.getId(key) << " "
-                        // //           << std::endl;
-
-                        // OneDTable::const_iterator it =
-                        //     hmm._transition[state]->begin();
-                        // double max = 0;
-                        // unsigned long new_state;
-
-                        // while (it != hmm._transition[state]->end()) {
-                        //     OneDTable::const_iterator it2 =
-                        //         hmm._emission[it->first]->find(hmm.getId(key));
-                        //     double p = std::exp(it2->second) *
-                        //         std::exp(it->second);
-
-                        //     if (max < p) {
-                        //         max = p;
-                        //         new_state = it->first;
-                        //     }
-                        //     ++it;
-                        // }
-                        // state = new_state;
-                        // dates.push_back(*ite);
-                        t = *ite;
-                        ++ite;
+                        // c'est un état infini
+                        if (ite != events.end()) {
+                            t = *ite;
+                            ++ite;
+                        }
                     }
                 } else {
                     state = hmm.getInitState();
@@ -367,6 +371,7 @@ Dates generate_dates(double max, const Dates& events, Hmm& hmm)
     return dates;
 }
 
+// à partir d'une liste de dates, on calcule une liste de durées
 Durations compute_durations(const Dates& dates)
 {
     Durations durations;
@@ -381,7 +386,7 @@ Durations compute_durations(const Dates& dates)
     return durations;
 }
 
-// merge date lists
+// fusionne une liste de listes de dates en une unique liste ordonée
 Dates union_dates(const std::vector < Dates >& D)
 {
     Dates U;
@@ -402,6 +407,9 @@ Dates union_dates(const std::vector < Dates >& D)
     return U;
 }
 
+// simule les n modèles et calcule les moyennes
+// ATTENTION !!! TOTALEMENT SPECIFIQUE AU GRAPHE DE MODELES DE
+// L'EXEMPLE !!!
 void generate_hmm(double max, const std::vector < std::string >& names)
 {
     std::map < std::string, Hmm > hmms;
@@ -414,50 +422,105 @@ void generate_hmm(double max, const std::vector < std::string >& names)
         ++it;
     }
 
-    Dates A_dates, B_dates, C_dates, D_dates, E_dates, F_dates, G_dates,
-        H_dates;
-    Durations A_durations, B_durations, C_durations, D_durations, E_durations,
-        F_durations, G_durations, H_durations;
+    {
+        Dates A_dates, B_dates, C_dates, D_dates, E_dates, F_dates, G_dates,
+            H_dates;
+        Durations A_durations, B_durations, C_durations, D_durations,
+            E_durations, F_durations, G_durations, H_durations;
 
-    A_dates = generate_dates(max, {}, hmms["a"]);
-    A_durations = compute_durations(A_dates);
-    compute_stats(A_durations);
+        A_dates = generate_dates(max, {}, hmms["a"]);
+        A_durations = compute_durations(A_dates);
+        std::cout << "a: ";
+        compute_stats(A_durations);
 
-    B_dates = generate_dates(max, {}, hmms["b"]);
-    B_durations = compute_durations(B_dates);
-    compute_stats(B_durations);
+        B_dates = generate_dates(max, {}, hmms["b"]);
+        B_durations = compute_durations(B_dates);
+        std::cout << "b: ";
+        compute_stats(B_durations);
 
-    C_dates = generate_dates(max, {}, hmms["c"]);
-    C_durations = compute_durations(C_dates);
-    compute_stats(C_durations);
+        C_dates = generate_dates(max, {}, hmms["c"]);
+        C_durations = compute_durations(C_dates);
+        std::cout << "c: ";
+        compute_stats(C_durations);
 
-    Dates AB_dates = union_dates({A_dates, B_dates});
+        Dates AB_dates = union_dates({A_dates, B_dates});
 
-    D_dates = generate_dates(max, AB_dates, hmms["d"]);
-    D_durations = compute_durations(D_dates);
-    compute_stats(D_durations);
+        D_dates = generate_dates(max, AB_dates, hmms["d"]);
+        D_durations = compute_durations(D_dates);
+        std::cout << "d: ";
+        compute_stats(D_durations);
 
-    Dates BC_dates = union_dates({B_dates, C_dates});
+        Dates BC_dates = union_dates({B_dates, C_dates});
 
-    E_dates = generate_dates(max, BC_dates, hmms["e"]);
-    E_durations = compute_durations(E_dates);
-    compute_stats(E_durations);
+        E_dates = generate_dates(max, BC_dates, hmms["e"]);
+        E_durations = compute_durations(E_dates);
+        std::cout << "e: ";
+        compute_stats(E_durations);
 
-    Dates DE_dates = union_dates({D_dates, E_dates});
+        Dates DE_dates = union_dates({D_dates, E_dates});
 
-    F_dates = generate_dates(max, DE_dates, hmms["f"]);
-    F_durations = compute_durations(F_dates);
-    compute_stats(F_durations);
+        F_dates = generate_dates(max, DE_dates, hmms["f"]);
+        F_durations = compute_durations(F_dates);
+        std::cout << "f: ";
+        compute_stats(F_durations);
 
-    G_dates = generate_dates(max, E_dates, hmms["g"]);
-    G_durations = compute_durations(G_dates);
-    compute_stats(G_durations);
+        G_dates = generate_dates(max, E_dates, hmms["g"]);
+        G_durations = compute_durations(G_dates);
+        std::cout << "g: ";
+        compute_stats(G_durations);
 
-    Dates FG_dates = union_dates({F_dates, G_dates});
+        Dates FG_dates = union_dates({F_dates, G_dates});
 
-    H_dates = generate_dates(max, FG_dates, hmms["h"]);
-    H_durations = compute_durations(H_dates);
-    compute_stats(H_durations);
+        H_dates = generate_dates(max, FG_dates, hmms["h"]);
+        H_durations = compute_durations(H_dates);
+        std::cout << "h: ";
+        compute_stats(H_durations);
+    }
+
+    // {
+    //     Dates A_dates, B_dates, C_dates, D_dates, E_dates, F_dates, G_dates,
+    //         H_dates;
+
+    //     A_dates = generate_dates(max, {}, hmms["a"]);
+    //     std::cout << "a: ";
+    //     compute_stats(compute_durations(A_dates));
+
+    //     B_dates = generate_dates(max, {}, hmms["a"]);
+    //     std::cout << "b: ";
+    //     compute_stats(compute_durations(B_dates));
+
+    //     C_dates = generate_dates(max, {}, hmms["a"]);
+    //     std::cout << "c: ";
+    //     compute_stats(compute_durations(C_dates));
+
+    //     Dates AB_dates = union_dates({A_dates, B_dates});
+
+    //     D_dates = generate_dates(max, AB_dates, hmms["d"]);
+    //     std::cout << "d: ";
+    //     compute_stats(compute_durations(D_dates));
+
+    //     Dates BC_dates = union_dates({B_dates, C_dates});
+
+    //     E_dates = generate_dates(max, BC_dates, hmms["d"]);
+    //     std::cout << "e: ";
+    //     compute_stats(compute_durations(E_dates));
+
+    //     Dates DE_dates = union_dates({D_dates, E_dates});
+
+    //     F_dates = generate_dates(max, DE_dates, hmms["d"]);
+    //     std::cout << "f: ";
+    //     compute_stats(compute_durations(F_dates));
+
+    //     G_dates = generate_dates(max, E_dates, hmms["g"]);
+    //     std::cout << "g: ";
+    //     compute_stats(compute_durations(G_dates));
+
+    //     Dates FG_dates = union_dates({F_dates, G_dates});
+
+    //     H_dates = generate_dates(max, FG_dates, hmms["d"]);
+    //     std::cout << "h: ";
+    //     compute_stats(compute_durations(H_dates));
+    // }
 }
 
 int main(int argc, char** argv)
@@ -469,7 +532,13 @@ int main(int argc, char** argv)
         return -1;
     }
     if (strcmp(argv[1], "-D") == 0) {
-        generate_devs();
+        if (argc != 3) {
+            std::cout <<
+                "USAGE: paradevs-learning [-D | -L x n i | -G n ... | -M x | -A n i]"
+                      << std::endl;
+            return -1;
+        }
+        generate_devs(atof(argv[2]));
     } else if (strcmp(argv[1], "-L") == 0) {
         if (argc != 5) {
             std::cout <<
